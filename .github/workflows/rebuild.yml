@@ -1,0 +1,101 @@
+name: Rebuild ruby
+
+on:
+  workflow_dispatch:
+    inputs:
+      ruby_version:
+        description: "Ruby version"
+        required: true
+        default: "2.7.2"
+      base_version:
+        description: "Base version"
+        required: false
+      rubygems_version:
+        description: "Rubygems version"
+        required: false
+
+permissions: {}
+
+jobs:
+  determine-dependencies:
+    runs-on: ubuntu-latest
+
+    steps:
+      - id: tag
+        run: printf "name=v$(echo $VERSION | tr '.' '_')" >> $GITHUB_OUTPUT
+        shell: bash
+        env:
+          VERSION: ${{ github.event.inputs.ruby_version }}
+
+      - name: Install base ruby
+        uses: ruby/setup-ruby@v1
+        with:
+          ruby-version: ${{ github.event.inputs.base_version || github.event.inputs.ruby_version }}
+
+      - name: Install rubygems
+        if: github.event.inputs.rubygems_version
+        run: gem update --system ${VERSION}
+        env:
+          VERSION: ${{ github.event.inputs.rubygems_version }}
+
+      # https://cache.ruby-lang.org/pub/ruby/3.4/ruby-3.4.2.zip
+      - name: Download release tarball
+        run: |
+          curl -L --fail https://cache.ruby-lang.org/pub/ruby/${VERSION%.*}/ruby-${VERSION}.tar.gz -o ruby-${VERSION}.tar.gz
+        env:
+          VERSION: ${{ github.event.inputs.ruby_version }}
+
+      - id: checkout
+        name: Checkout repository
+        uses: actions/checkout@v4
+        with:
+          persist-credentials: false
+          repository: ${{ github.repository }}
+          ref: ${{ steps.tag.outputs.name }}
+          path: ruby
+
+      - name: Make snapshot
+        run: |
+          ./autogen.sh
+          mkdir build
+          pushd build
+          ../configure
+          make dist V=1 DISTOPTS="-packages=gzip"
+        working-directory: ruby
+        env:
+          RELNAME: ${{ github.event.inputs.ruby_version }}
+
+      - name: Install the latest version of uv
+        uses: astral-sh/setup-uv@v5
+
+      - name: Diff against released tarball
+        run: |
+          uvx diffoscope ruby/build/tmp/ruby-${RELNAME}.tar.gz ruby-${RELNAME}.tar.gz \
+            --html-dir ruby-${RELNAME}-diff \
+            --markdown-dir ruby-${RELNAME}-diff.md \
+            || true
+        env:
+          RELNAME: ${{ github.event.inputs.ruby_version }}
+
+      - name: Upload HTML diff
+        uses: actions/upload-artifact@v4
+        with:
+          name: diff-html
+          include-hidden-files: true
+          path: ruby-${{github.event.inputs.ruby_version }}-diff
+
+      - name: Upload markdown diff
+        uses: actions/upload-artifact@v4
+        with:
+          name: diff-markdown
+          path: ruby-${{github.event.inputs.ruby_version }}-diff.md
+
+      - name: Upload rebuilt tarball
+        uses: actions/upload-artifact@v4
+        with:
+          name: tarball
+          path: ruby/build/tmp/ruby-${{github.event.inputs.ruby_version }}.tar.gz
+
+      - name: Set output
+        run: |
+          cat <(printf '```yaml\n') ruby/build/tmp/info/info.yaml <(printf '\n```\n') >> $GITHUB_STEP_SUMMARY
