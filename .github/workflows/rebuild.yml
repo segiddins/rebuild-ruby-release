@@ -72,7 +72,7 @@ jobs:
         run: |
           uvx diffoscope ruby/build/tmp/ruby-${RELNAME}.tar.gz ruby-${RELNAME}.tar.gz \
             --html-dir ruby-${RELNAME}-diff \
-            --markdown-dir ruby-${RELNAME}-diff.md \
+            --markdown ruby-${RELNAME}-diff.md \
             || true
         env:
           RELNAME: ${{ github.event.inputs.ruby_version }}
