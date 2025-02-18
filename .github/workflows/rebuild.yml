@@ -73,17 +73,25 @@ jobs:
         run: |
           uvx diffoscope ruby-${RELNAME}.tar.gz ruby/build/tmp/ruby-${RELNAME}.tar.gz \
             --html-dir ruby-${RELNAME}-diff \
+            --html ruby-${RELNAME}-diff.html \
             --markdown ruby-${RELNAME}-diff.md \
             || true
         env:
           RELNAME: ${{ github.event.inputs.ruby_version }}
+
+      - name: Upload HTML dir diff
+        uses: actions/upload-artifact@v4
+        with:
+          name: diff-html-dir
+          include-hidden-files: true
+          path: ruby-${{github.event.inputs.ruby_version }}-diff
 
       - name: Upload HTML diff
         uses: actions/upload-artifact@v4
         with:
           name: diff-html
           include-hidden-files: true
-          path: ruby-${{github.event.inputs.ruby_version }}-diff
+          path: ruby-${{github.event.inputs.ruby_version }}-diff.html
 
       - name: Upload markdown diff
         uses: actions/upload-artifact@v4
@@ -99,4 +107,14 @@ jobs:
 
       - name: Set output
         run: |
-          cat <(printf '```yaml\n') ruby/build/tmp/info/info.yml <(printf '\n```\n') >> $GITHUB_STEP_SUMMARY
+          cat \
+            <(printf '# Ruby: %s\n' $VERSION) \
+            <(printf 'Base: \n' $BASE) \
+            <(printf 'RubyGems: \n' $RUBYGEMS) \
+            <(printf '```yaml\n') ruby/build/tmp/info/info.yml <(printf '\n```\n\n') \
+            ruby-$VERSION-diff \
+            >> $GITHUB_STEP_SUMMARY
+        env:
+          VERSION: ${{ github.event.inputs.ruby_version }}
+          BASE: ${{ github.event.inputs.base_version || github.event.inputs.ruby_version }}
+          RUBYGEMS: ${{ github.event.inputs.rubygems_version }}
