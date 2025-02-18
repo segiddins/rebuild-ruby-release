@@ -17,7 +17,7 @@ on:
 permissions: {}
 
 jobs:
-  determine-dependencies:
+  rebuild:
     runs-on: ubuntu-latest
 
     steps:
@@ -71,7 +71,7 @@ jobs:
 
       - name: Diff against released tarball
         run: |
-          uvx diffoscope ruby/build/tmp/ruby-${RELNAME}.tar.gz ruby-${RELNAME}.tar.gz \
+          uvx diffoscope ruby-${RELNAME}.tar.gz ruby/build/tmp/ruby-${RELNAME}.tar.gz \
             --html-dir ruby-${RELNAME}-diff \
             --markdown ruby-${RELNAME}-diff.md \
             || true
