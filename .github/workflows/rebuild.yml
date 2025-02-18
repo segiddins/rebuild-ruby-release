@@ -50,7 +50,7 @@ jobs:
         uses: actions/checkout@v4
         with:
           persist-credentials: false
-          repository: ${{ github.repository }}
+          repository: ruby/ruby
           ref: ${{ steps.tag.outputs.name }}
           path: ruby
 
