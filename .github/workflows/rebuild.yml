@@ -53,6 +53,7 @@ jobs:
           repository: ruby/ruby
           ref: ${{ steps.tag.outputs.name }}
           path: ruby
+          fetch-depth: 0 # needed for changelog generation
 
       - name: Make snapshot
         run: |
@@ -98,4 +99,4 @@ jobs:
 
       - name: Set output
         run: |
-          cat <(printf '```yaml\n') ruby/build/tmp/info/info.yaml <(printf '\n```\n') >> $GITHUB_STEP_SUMMARY
+          cat <(printf '```yaml\n') ruby/build/tmp/info/info.yml <(printf '\n```\n') >> $GITHUB_STEP_SUMMARY
