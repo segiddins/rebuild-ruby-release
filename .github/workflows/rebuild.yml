@@ -112,7 +112,7 @@ jobs:
             <(printf 'Base: \n' $BASE) \
             <(printf 'RubyGems: \n' $RUBYGEMS) \
             <(printf '```yaml\n') ruby/build/tmp/info/info.yml <(printf '\n```\n\n') \
-            ruby-$VERSION-diff \
+            ruby-$VERSION-diff.md \
             >> $GITHUB_STEP_SUMMARY
         env:
           VERSION: ${{ github.event.inputs.ruby_version }}
